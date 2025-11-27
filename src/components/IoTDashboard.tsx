@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { RadioTower } from "lucide-react";
+import { Radar } from "lucide-react";
 import OverviewScreen from './OverviewScreen';
 import CafeteriaScreen from './CafeteriaScreen';
 import IAQScreen from './IAQScreen';
@@ -83,9 +85,8 @@ const IoTDashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
+                <Radar className="w-6 h-6 text-white" />
+
               </div>
               <div>
                 <h1 className="text-xl font-semibold text-gray-900">IOT Sensors Dashboard</h1>
@@ -116,7 +117,7 @@ const IoTDashboard: React.FC = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-all flex items-center space-x-2 ${
                   activeTab === tab.id
-                    ? 'bg-gray-900 text-white shadow-sm'
+                    ? 'bg-green-500 text-white shadow-sm'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
               >

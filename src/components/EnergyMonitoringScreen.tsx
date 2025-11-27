@@ -53,7 +53,6 @@ interface FloorEnergy {
 
 const EnergyMonitoringScreen: React.FC = () => {
   const [selectedFloor, setSelectedFloor] = useState<number>(1);
-  const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month'>('today');
 
   const [meters] = useState<EnergyMeter[]>([
     { id: 'EM-F1-001', location: 'Main Panel', floor: 1, voltage: 230.5, current: 45.2, powerFactor: 0.92, kwh: 342.5, power: 10.42, status: 'normal', timestamp: '15:05:00' },
@@ -74,7 +73,6 @@ const EnergyMonitoringScreen: React.FC = () => {
   const totalConsumption = meters.reduce((sum, m) => sum + m.kwh, 0);
   const avgPowerFactor = meters.reduce((sum, m) => sum + m.powerFactor, 0) / meters.length;
   const activePower = meters.reduce((sum, m) => sum + m.power, 0);
-  const highConsumptionZones = meters.filter(m => m.status === 'warning' || m.status === 'critical').length;
 
   const getStatusBadge = (status: string) => {
     const colors = {
@@ -91,8 +89,8 @@ const EnergyMonitoringScreen: React.FC = () => {
       {
         label: 'Power (kW)',
         data: [35, 28, 42, 58, 65, 52, 38],
-        borderColor: 'rgb(17, 24, 39)',
-        backgroundColor: 'rgba(17, 24, 39, 0.05)',
+        borderColor: 'rgb(34, 197, 94)',
+        backgroundColor: 'rgba(34, 197, 94, 0.1)',
         fill: true,
         tension: 0.4,
         borderWidth: 2,
@@ -107,8 +105,8 @@ const EnergyMonitoringScreen: React.FC = () => {
       {
         label: 'Energy (kWh)',
         data: floorEnergy.map(f => f.consumption),
-        backgroundColor: 'rgba(17, 24, 39, 0.8)',
-        borderColor: 'rgb(17, 24, 39)',
+        backgroundColor: 'rgba(34, 197, 94, 0.8)',
+        borderColor: 'rgb(34, 197, 94)',
         borderWidth: 1
       }
     ]
@@ -126,7 +124,7 @@ const EnergyMonitoringScreen: React.FC = () => {
           selectedFloorData.equipment.appliances
         ] : [],
         backgroundColor: [
-          'rgba(17, 24, 39, 0.9)',
+          'rgba(34, 197, 94, 0.9)',
           'rgba(75, 85, 99, 0.8)',
           'rgba(107, 114, 128, 0.7)',
           'rgba(156, 163, 175, 0.6)'
@@ -167,226 +165,277 @@ const EnergyMonitoringScreen: React.FC = () => {
     }
   };
 
+  // Alerts data
+  const alerts = meters.filter(m => m.status === 'warning' || m.status === 'critical');
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900">Energy Monitoring</h2>
-        <p className="text-sm text-gray-500 mt-1">Real-time power consumption and efficiency analytics</p>
-      </div>
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      {/* Main Content */}
+      <div className="lg:col-span-3 space-y-6">
+        {/* Header with Download */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Energy Monitoring</h2>
+            <p className="text-sm text-gray-500 mt-1">Real-time power consumption and efficiency analytics</p>
+          </div>
+          <button className="flex items-center space-x-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span className="text-sm font-medium">Download Report</span>
+          </button>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <p className="text-xs text-gray-500 mb-1">Total Consumption</p>
-          <p className="text-2xl font-semibold text-gray-900">{totalConsumption.toFixed(1)} kWh</p>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <p className="text-xs text-gray-500 mb-1">Total Consumption</p>
+            <p className="text-2xl font-semibold text-gray-900">{totalConsumption.toFixed(1)} kWh</p>
+          </div>
+          <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <p className="text-xs text-gray-500 mb-1">Avg Power Factor</p>
+            <p className="text-2xl font-semibold text-gray-900">{avgPowerFactor.toFixed(2)}</p>
+          </div>
+          <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <p className="text-xs text-gray-500 mb-1">Active Power</p>
+            <p className="text-2xl font-semibold text-gray-900">{activePower.toFixed(1)} kW</p>
+          </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <p className="text-xs text-gray-500 mb-1">Avg Power Factor</p>
-          <p className="text-2xl font-semibold text-gray-900">{avgPowerFactor.toFixed(2)}</p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <p className="text-xs text-gray-500 mb-1">Active Power</p>
-          <p className="text-2xl font-semibold text-gray-900">{activePower.toFixed(1)} kW</p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <p className="text-xs text-gray-500 mb-1">High Usage Zones</p>
-          <p className="text-2xl font-semibold text-orange-600">{highConsumptionZones}</p>
-        </div>
-      </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex items-center space-x-2">
-          {['today', 'week', 'month'].map((range) => (
-            <button
-              key={range}
-              onClick={() => setTimeRange(range as 'today' | 'week' | 'month')}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors capitalize ${
-                timeRange === range
-                  ? 'bg-gray-900 text-white'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
-            >
-              {range}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-sm font-medium text-gray-900 mb-4">Power Consumption Trend</h3>
-        <div style={{ height: '280px' }}>
-          <Line data={consumptionTrendData} options={chartOptions} />
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-sm font-medium text-gray-900 mb-4">Floor-wise Consumption</h3>
-        <div style={{ height: '280px' }}>
-          <Bar data={floorConsumptionData} options={chartOptions} />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {meters.map((meter) => (
-          <div key={meter.id} className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h3 className="text-base font-medium text-gray-900">{meter.id}</h3>
-                <p className="text-xs text-gray-500 mt-1">Floor {meter.floor} - {meter.location}</p>
-                <p className="text-xs text-gray-400 mt-0.5">Updated {meter.timestamp}</p>
-              </div>
-              <span className={`px-2 py-1 rounded-md text-xs font-medium border ${getStatusBadge(meter.status)}`}>
-                {meter.status.toUpperCase()}
-              </span>
+        {/* Consumption Trend Chart with Live Indicator */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-medium text-gray-900">Power Consumption Trend</h3>
+            <div className="flex items-center space-x-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+              <span className="text-xs font-medium text-green-700">Live Data</span>
             </div>
+          </div>
+          <div style={{ height: '240px' }}>
+            <Line data={consumptionTrendData} options={chartOptions} />
+          </div>
+        </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-xs text-gray-500 mb-1">Voltage</p>
-                <p className="text-lg font-semibold text-gray-900">{meter.voltage} V</p>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-xs text-gray-500 mb-1">Current</p>
-                <p className="text-lg font-semibold text-gray-900">{meter.current} A</p>
-              </div>
+        {/* Floor-wise Consumption Chart with Live Indicator */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-medium text-gray-900">Floor-wise Consumption</h3>
+            <div className="flex items-center space-x-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+              <span className="text-xs font-medium text-green-700">Live Data</span>
             </div>
+          </div>
+          <div style={{ height: '240px' }}>
+            <Bar data={floorConsumptionData} options={chartOptions} />
+          </div>
+        </div>
 
-            <div className="space-y-3">
-              <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                <span className="text-sm text-gray-600">Power Factor</span>
-                <div className="flex items-center space-x-2">
-                  <div className="w-20 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full ${
-                        meter.powerFactor >= 0.9 ? 'bg-green-500' :
-                        meter.powerFactor >= 0.8 ? 'bg-yellow-500' : 'bg-red-500'
-                      }`}
-                      style={{ width: `${meter.powerFactor * 100}%` }}
-                    ></div>
-                  </div>
-                  <span className="text-sm font-medium text-gray-900">{meter.powerFactor}</span>
+        {/* Meter Cards Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {meters.map((meter) => (
+            <div key={meter.id} className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="text-base font-medium text-gray-900">{meter.id}</h3>
+                  <p className="text-xs text-gray-500 mt-1">Floor {meter.floor} - {meter.location}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Updated {meter.timestamp}</p>
+                </div>
+                <span className={`px-2 py-1 rounded-md text-xs font-medium border ${getStatusBadge(meter.status)}`}>
+                  {meter.status.toUpperCase()}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <p className="text-xs text-gray-500 mb-1">Voltage</p>
+                  <p className="text-lg font-semibold text-gray-900">{meter.voltage} V</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <p className="text-xs text-gray-500 mb-1">Current</p>
+                  <p className="text-lg font-semibold text-gray-900">{meter.current} A</p>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                <span className="text-sm text-gray-600">Consumption</span>
-                <span className="text-base font-semibold text-gray-900">{meter.kwh} kWh</span>
-              </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <span className="text-sm text-gray-600">Power Factor</span>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-20 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full ${
+                          meter.powerFactor >= 0.9 ? 'bg-green-500' :
+                          meter.powerFactor >= 0.8 ? 'bg-yellow-500' : 'bg-red-500'
+                        }`}
+                        style={{ width: `${meter.powerFactor * 100}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm font-medium text-gray-900">{meter.powerFactor}</span>
+                  </div>
+                </div>
 
-              <div className="flex items-center justify-between py-2">
-                <span className="text-sm text-gray-600">Active Power</span>
-                <span className="text-base font-semibold text-gray-900">{meter.power} kW</span>
+                <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <span className="text-sm text-gray-600">Consumption</span>
+                  <span className="text-base font-semibold text-gray-900">{meter.kwh} kWh</span>
+                </div>
+
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm text-gray-600">Active Power</span>
+                  <span className="text-base font-semibold text-gray-900">{meter.power} kW</span>
+                </div>
               </div>
             </div>
+          ))}
+        </div>
 
-            {meter.status === 'warning' && (
-              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-xs font-medium text-yellow-700">High consumption detected</p>
+        {/* Equipment Breakdown */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h3 className="text-sm font-medium text-gray-900 mb-4">Equipment Breakdown</h3>
+            <div className="mb-4 flex items-center space-x-2">
+              {[1, 2, 3, 4, 5].map(floor => (
+                <button
+                  key={floor}
+                  onClick={() => setSelectedFloor(floor)}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    selectedFloor === floor
+                      ? 'bg-green-500 text-white'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  Floor {floor}
+                </button>
+              ))}
+            </div>
+            <div style={{ height: '240px' }}>
+              <Doughnut data={equipmentBreakdownData} options={doughnutOptions} />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h3 className="text-sm font-medium text-gray-900 mb-4">Floor {selectedFloor} Details</h3>
+            {selectedFloorData && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">HVAC Systems</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Heating, Ventilation & AC</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-semibold text-gray-900">{selectedFloorData.equipment.hvac}</p>
+                    <p className="text-xs text-gray-500">kWh</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">Lighting</p>
+                    <p className="text-xs text-gray-500 mt-0.5">All floor lighting</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-semibold text-gray-900">{selectedFloorData.equipment.lighting}</p>
+                    <p className="text-xs text-gray-500">kWh</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">Servers & IT</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Computing equipment</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-semibold text-gray-900">{selectedFloorData.equipment.servers}</p>
+                    <p className="text-xs text-gray-500">kWh</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">Appliances</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Other equipment</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-semibold text-gray-900">{selectedFloorData.equipment.appliances}</p>
+                    <p className="text-xs text-gray-500">kWh</p>
+                  </div>
+                </div>
+
+                <div className="mt-4 p-4 bg-green-500 text-white rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium">Total Floor Consumption</p>
+                    <p className="text-2xl font-semibold">{selectedFloorData.consumption} kWh</p>
+                  </div>
+                </div>
               </div>
             )}
           </div>
-        ))}
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="text-sm font-medium text-gray-900 mb-4">Equipment Breakdown</h3>
-          <div className="mb-4 flex items-center space-x-2">
-            {[1, 2, 3, 4, 5].map(floor => (
-              <button
-                key={floor}
-                onClick={() => setSelectedFloor(floor)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  selectedFloor === floor
-                    ? 'bg-gray-900 text-white'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-              >
-                Floor {floor}
-              </button>
-            ))}
+      {/* Right Side - Alerts Panel */}
+      <div className="lg:col-span-1">
+        <div className="bg-white border border-gray-200 rounded-lg p-4 sticky top-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-gray-900">Active Alerts</h3>
+            <span className="px-2 py-1 bg-red-50 text-red-700 border border-red-200 rounded text-xs font-medium">
+              {alerts.length}
+            </span>
           </div>
-          <div style={{ height: '280px' }}>
-            <Doughnut data={equipmentBreakdownData} options={doughnutOptions} />
+          <div className="space-y-3">
+            {alerts.length === 0 ? (
+              <div className="text-center py-8">
+                <svg className="w-12 h-12 text-green-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-xs text-gray-500">All systems operating efficiently</p>
+              </div>
+            ) : (
+              alerts.map((meter, idx) => (
+                <div key={idx} className={`p-3 rounded-lg border ${
+                  meter.status === 'critical' ? 'bg-red-50 border-red-200' : 'bg-yellow-50 border-yellow-200'
+                }`}>
+                  <p className="text-sm font-medium text-gray-900">{meter.id}</p>
+                  <p className="text-xs text-gray-600 mt-1">Floor {meter.floor} - {meter.location}</p>
+                  <div className="mt-2 pt-2 border-t border-gray-200 space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-600">Current:</span>
+                      <span className="font-medium">{meter.current} A</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-600">Power Factor:</span>
+                      <span className="font-medium">{meter.powerFactor}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-600">Power:</span>
+                      <span className="font-medium">{meter.power} kW</span>
+                    </div>
+                  </div>
+                  {meter.powerFactor < 0.9 && (
+                    <p className="text-xs text-gray-600 mt-2">⚠️ Low power factor - consider optimization</p>
+                  )}
+                </div>
+              ))
+            )}
           </div>
-        </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="text-sm font-medium text-gray-900 mb-4">Floor {selectedFloor} Details</h3>
-          {selectedFloorData && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">HVAC Systems</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Heating, Ventilation & AC</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-semibold text-gray-900">{selectedFloorData.equipment.hvac}</p>
-                  <p className="text-xs text-gray-500">kWh</p>
-                </div>
+          {/* Quick Stats */}
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <h4 className="text-xs font-semibold text-gray-900 mb-3">Quick Stats</h4>
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-600">Total Meters</span>
+                <span className="font-medium text-gray-900">{meters.length}</span>
               </div>
-
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">Lighting</p>
-                  <p className="text-xs text-gray-500 mt-0.5">All floor lighting</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-semibold text-gray-900">{selectedFloorData.equipment.lighting}</p>
-                  <p className="text-xs text-gray-500">kWh</p>
-                </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-600">High Usage</span>
+                <span className="font-medium text-yellow-600">{alerts.length}</span>
               </div>
-
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">Servers & IT</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Computing equipment</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-semibold text-gray-900">{selectedFloorData.equipment.servers}</p>
-                  <p className="text-xs text-gray-500">kWh</p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">Appliances</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Other equipment</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-semibold text-gray-900">{selectedFloorData.equipment.appliances}</p>
-                  <p className="text-xs text-gray-500">kWh</p>
-                </div>
-              </div>
-
-              <div className="mt-4 p-4 bg-gray-900 text-white rounded-lg">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium">Total Floor Consumption</p>
-                  <p className="text-2xl font-semibold">{selectedFloorData.consumption} kWh</p>
-                </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-600">System Health</span>
+                <span className="font-medium text-green-600">
+                  {((meters.length - alerts.length) / meters.length * 100).toFixed(0)}%
+                </span>
               </div>
             </div>
-          )}
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-sm font-medium text-gray-900 mb-4">Optimization Recommendations</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm font-medium text-blue-900 mb-1">Improve Power Factor</p>
-            <p className="text-xs text-blue-700">Floor 4 has a power factor of 0.85. Consider capacitor banks.</p>
-          </div>
-          <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-sm font-medium text-green-900 mb-1">Optimize HVAC Schedule</p>
-            <p className="text-xs text-green-700">HVAC consumes 42%. Adjust based on occupancy patterns.</p>
-          </div>
-          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-sm font-medium text-yellow-900 mb-1">LED Upgrade</p>
-            <p className="text-xs text-yellow-700">Lighting is 18%. LED upgrade could reduce by 40%.</p>
-          </div>
-          <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-            <p className="text-sm font-medium text-purple-900 mb-1">Server Optimization</p>
-            <p className="text-xs text-purple-700">Server loads are 30% higher. Consider virtualization.</p>
           </div>
         </div>
       </div>

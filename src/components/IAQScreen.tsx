@@ -1,5 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+} from 'chart.js';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 interface IAQSensor {
   floor: number;
@@ -20,7 +42,7 @@ interface IAQSensor {
 
 const IAQScreen: React.FC = () => {
   const [selectedFloor, setSelectedFloor] = useState<number>(1);
-  const [sensors, setSensors] = useState<IAQSensor[]>([
+  const [sensors] = useState<IAQSensor[]>([
     {
       floor: 1,
       location: 'Zone A',
@@ -234,12 +256,13 @@ const IAQScreen: React.FC = () => {
       {
         label: 'CO₂ (ppm)',
         data: [650, 720, 890, 1050, 950, 811],
-        borderColor: 'rgb(17, 24, 39)',
-        backgroundColor: 'rgba(17, 24, 39, 0.05)',
+        borderColor: 'rgb(34, 197, 94)',
+        backgroundColor: 'rgba(34, 197, 94, 0.1)',
         yAxisID: 'y',
         borderWidth: 2,
         pointRadius: 0,
-        tension: 0.4
+        tension: 0.4,
+        fill: true
       },
       {
         label: 'PM2.5 (μg/m³)',
@@ -291,148 +314,214 @@ const IAQScreen: React.FC = () => {
     }
   };
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900">Indoor Air Quality</h2>
-        <p className="text-sm text-gray-500 mt-1">Real-time environmental monitoring across all floors</p>
-      </div>
+  // Alerts data
+  const alerts = sensors.filter(s => s.quality === 'poor' || s.quality === 'moderate');
 
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex items-center space-x-2">
-          {[1, 2, 3, 4, 5].map(floor => (
-            <button
-              key={floor}
-              onClick={() => setSelectedFloor(floor)}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                selectedFloor === floor
-                  ? 'bg-gray-900 text-white'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
-            >
-              Floor {floor}
-            </button>
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      {/* Main Content */}
+      <div className="lg:col-span-3 space-y-6">
+        {/* Header with Download */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Indoor Air Quality</h2>
+            <p className="text-sm text-gray-500 mt-1">Real-time environmental monitoring across all floors</p>
+          </div>
+          <button className="flex items-center space-x-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span className="text-sm font-medium">Download Report</span>
+          </button>
+        </div>
+
+        {/* Floor Selection */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center space-x-2">
+            {[1, 2, 3, 4, 5].map(floor => (
+              <button
+                key={floor}
+                onClick={() => setSelectedFloor(floor)}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  selectedFloor === floor
+                    ? 'bg-green-500 text-white'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                Floor {floor}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Floor Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <p className="text-xs text-gray-500 mb-1">Avg Temperature</p>
+            <p className="text-2xl font-semibold text-gray-900">{floorStats.avgTemp}°C</p>
+          </div>
+          <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <p className="text-xs text-gray-500 mb-1">Avg Humidity</p>
+            <p className="text-2xl font-semibold text-gray-900">{floorStats.avgHumidity}%</p>
+          </div>
+          <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <p className="text-xs text-gray-500 mb-1">Avg CO₂</p>
+            <p className="text-2xl font-semibold text-gray-900">{floorStats.avgCO2} ppm</p>
+          </div>
+          <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <p className="text-xs text-gray-500 mb-1">Occupied Zones</p>
+            <p className="text-2xl font-semibold text-gray-900">{floorStats.occupiedZones}/{floorSensors.length}</p>
+          </div>
+        </div>
+
+        {/* Sensor Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {floorSensors.map((sensor, index) => (
+            <div key={index} className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="text-base font-medium text-gray-900">Floor {sensor.floor} - {sensor.location}</h3>
+                  <p className="text-xs text-gray-500 mt-1">Updated {sensor.lastUpdate}</p>
+                </div>
+                <span className={`px-2 py-1 rounded-md text-xs font-medium border ${getQualityBadge(sensor.quality)}`}>
+                  {sensor.quality.toUpperCase()}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <p className="text-xs text-gray-500 mb-1">Temperature</p>
+                  <p className="text-lg font-semibold text-gray-900">{sensor.temperature}°C</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <p className="text-xs text-gray-500 mb-1">Humidity</p>
+                  <p className="text-lg font-semibold text-gray-900">{sensor.humidity}%</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <span className="text-sm text-gray-600">CO₂</span>
+                  <span className={`text-sm font-medium ${getStatusColor(getParameterStatus('co2', sensor.co2))}`}>
+                    {sensor.co2} ppm
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <span className="text-sm text-gray-600">PM2.5</span>
+                  <span className={`text-sm font-medium ${getStatusColor(getParameterStatus('pm25', sensor.pm25))}`}>
+                    {sensor.pm25} μg/m³
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <span className="text-sm text-gray-600">PM10</span>
+                  <span className={`text-sm font-medium ${getStatusColor(getParameterStatus('pm10', sensor.pm10))}`}>
+                    {sensor.pm10} μg/m³
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm text-gray-600">TVOC</span>
+                  <span className={`text-sm font-medium ${getStatusColor(getParameterStatus('tvoc', sensor.tvoc))}`}>
+                    {sensor.tvoc} ppb
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-gray-100">
+                <div className="text-center">
+                  <p className="text-xs text-gray-500">Light</p>
+                  <p className="text-xs font-medium text-gray-900">{sensor.illuminance} lux</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-gray-500">Pressure</p>
+                  <p className="text-xs font-medium text-gray-900">{sensor.pressure} hPa</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-gray-500">Ozone</p>
+                  <p className="text-xs font-medium text-gray-900">{sensor.ozone} ppm</p>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <p className="text-xs text-gray-500 mb-1">Avg Temperature</p>
-          <p className="text-2xl font-semibold text-gray-900">{floorStats.avgTemp}°C</p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <p className="text-xs text-gray-500 mb-1">Avg Humidity</p>
-          <p className="text-2xl font-semibold text-gray-900">{floorStats.avgHumidity}%</p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <p className="text-xs text-gray-500 mb-1">Avg CO₂</p>
-          <p className="text-2xl font-semibold text-gray-900">{floorStats.avgCO2} ppm</p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <p className="text-xs text-gray-500 mb-1">Occupied Zones</p>
-          <p className="text-2xl font-semibold text-gray-900">{floorStats.occupiedZones}/{floorSensors.length}</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {floorSensors.map((sensor, index) => (
-          <div key={index} className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h3 className="text-base font-medium text-gray-900">Floor {sensor.floor} - {sensor.location}</h3>
-                <p className="text-xs text-gray-500 mt-1">Updated {sensor.lastUpdate}</p>
-              </div>
-              <span className={`px-2 py-1 rounded-md text-xs font-medium border ${getQualityBadge(sensor.quality)}`}>
-                {sensor.quality.toUpperCase()}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-xs text-gray-500 mb-1">Temperature</p>
-                <p className="text-lg font-semibold text-gray-900">{sensor.temperature}°C</p>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-xs text-gray-500 mb-1">Humidity</p>
-                <p className="text-lg font-semibold text-gray-900">{sensor.humidity}%</p>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                <span className="text-sm text-gray-600">CO₂</span>
-                <span className={`text-sm font-medium ${getStatusColor(getParameterStatus('co2', sensor.co2))}`}>
-                  {sensor.co2} ppm
-                </span>
-              </div>
-              <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                <span className="text-sm text-gray-600">PM2.5</span>
-                <span className={`text-sm font-medium ${getStatusColor(getParameterStatus('pm25', sensor.pm25))}`}>
-                  {sensor.pm25} μg/m³
-                </span>
-              </div>
-              <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                <span className="text-sm text-gray-600">PM10</span>
-                <span className={`text-sm font-medium ${getStatusColor(getParameterStatus('pm10', sensor.pm10))}`}>
-                  {sensor.pm10} μg/m³
-                </span>
-              </div>
-              <div className="flex items-center justify-between py-2">
-                <span className="text-sm text-gray-600">TVOC</span>
-                <span className={`text-sm font-medium ${getStatusColor(getParameterStatus('tvoc', sensor.tvoc))}`}>
-                  {sensor.tvoc} ppb
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-gray-100">
-              <div className="text-center">
-                <p className="text-xs text-gray-500">Light</p>
-                <p className="text-xs font-medium text-gray-900">{sensor.illuminance} lux</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-gray-500">Pressure</p>
-                <p className="text-xs font-medium text-gray-900">{sensor.pressure} hPa</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-gray-500">Ozone</p>
-                <p className="text-xs font-medium text-gray-900">{sensor.ozone} ppm</p>
-              </div>
+        {/* Historical Trends Chart with Live Indicator */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-medium text-gray-900">Historical Trends - Floor {selectedFloor}</h3>
+            <div className="flex items-center space-x-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+              <span className="text-xs font-medium text-green-700">Live Data</span>
             </div>
           </div>
-        ))}
-      </div>
-
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-sm font-medium text-gray-900 mb-4">Historical Trends - Floor {selectedFloor}</h3>
-        <div style={{ height: '280px' }}>
-          <Line data={chartData} options={chartOptions} />
+          <div style={{ height: '280px' }}>
+            <Line data={chartData} options={chartOptions} />
+          </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-sm font-medium text-gray-900 mb-4">Active Alerts</h3>
-        <div className="space-y-3">
-          {sensors
-            .filter(s => s.quality === 'poor' || s.quality === 'moderate')
-            .map((sensor, index) => (
-              <div key={index} className="flex items-start p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <div className="flex-1">
+      {/* Right Side - Alerts Panel */}
+      <div className="lg:col-span-1">
+        <div className="bg-white border border-gray-200 rounded-lg p-4 sticky top-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-gray-900">Active Alerts</h3>
+            <span className="px-2 py-1 bg-red-50 text-red-700 border border-red-200 rounded text-xs font-medium">
+              {alerts.length}
+            </span>
+          </div>
+          <div className="space-y-3">
+            {alerts.length === 0 ? (
+              <div className="text-center py-8">
+                <svg className="w-12 h-12 text-green-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-xs text-gray-500">All zones operating normally</p>
+              </div>
+            ) : (
+              alerts.map((sensor, index) => (
+                <div key={index} className={`p-3 rounded-lg border ${
+                  sensor.quality === 'poor' ? 'bg-red-50 border-red-200' : 'bg-yellow-50 border-yellow-200'
+                }`}>
                   <p className="text-sm font-medium text-gray-900">Floor {sensor.floor} - {sensor.location}</p>
                   <p className="text-xs text-gray-600 mt-1">
                     {sensor.co2 > 1200 && 'High CO₂ levels detected. '}
                     {sensor.pm25 > 150 && 'PM2.5 exceeds threshold. '}
                     Action recommended.
                   </p>
+                  <div className="mt-2 pt-2 border-t border-gray-200 space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-600">CO₂:</span>
+                      <span className="font-medium">{sensor.co2} ppm</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-600">PM2.5:</span>
+                      <span className="font-medium">{sensor.pm25} μg/m³</span>
+                    </div>
+                  </div>
                 </div>
+              ))
+            )}
+          </div>
+
+          {/* Quick Stats */}
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <h4 className="text-xs font-semibold text-gray-900 mb-3">Quick Stats</h4>
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-600">Total Sensors</span>
+                <span className="font-medium text-gray-900">{sensors.length}</span>
               </div>
-            ))}
-          {sensors.filter(s => s.quality === 'poor' || s.quality === 'moderate').length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              <p className="text-sm">No active alerts. All zones operating normally.</p>
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-600">Alert Zones</span>
+                <span className="font-medium text-red-600">{alerts.length}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-600">Avg Temp</span>
+                <span className="font-medium text-gray-900">
+                  {(sensors.reduce((sum, s) => sum + s.temperature, 0) / sensors.length).toFixed(1)}°C
+                </span>
+              </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
